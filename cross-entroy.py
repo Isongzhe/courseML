@@ -1,7 +1,6 @@
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt
-import tqdm 
 
 # Plotting Class
 class Plotting:
@@ -150,7 +149,7 @@ class NeuralNetwork:
         self.w_hid = np.random.rand(input_size, self.n)*2-1
 
     def cross_entropy(self, true_vector, pred_vector):
-        print(f'這是每筆的np.log {-np.log10(pred_vector)}')
+        # print(f'這是每筆的np.log {-np.log10(pred_vector)}')
         return np.sum(true_vector * (-np.log10(pred_vector)))
 
     # defined forward propagation function
@@ -161,9 +160,9 @@ class NeuralNetwork:
         a_hid = self.logsig(sum_hid) #(1,n) n=hidden layer node number
 
         sum_out = a_hid @ self.w_out #(1,n) @ (n,output_size) = (1, output_size)
-        print(f"sum_out: {sum_out}")
+        # print(f"sum_out: {sum_out}")
         a_out = self.softmax(sum_out) # (1, output_size)
-        print(f"a_out: {a_out}")
+        # print(f"a_out: {a_out}")
 
         return a_hid, a_out
     
@@ -178,10 +177,10 @@ class NeuralNetwork:
 
         # update weights
         # 1.weight_out
-        self.w_out += learning_rate * a_hid.T @ Delta_out #(n,output_size) + lr* (n,1) @ (1,output_size) = (n,output_size)
+        self.w_out -= learning_rate * a_hid.T @ Delta_out #(n,output_size) + lr* (n,1) @ (1,output_size) = (n,output_size)
 
         # 2.weight_hid
-        self.w_hid += learning_rate * input_vector.T @ (Delta_hid * self.dlogsig(a_hid)) #(input_sizes,n) + lr* (input_sizes,1) @ [(1,n)*(1,n)] = (input_sizes,n)
+        self.w_hid -= learning_rate * input_vector.T @ (Delta_hid * self.dlogsig(a_hid)) #(input_sizes,n) + lr* (input_sizes,1) @ [(1,n)*(1,n)] = (input_sizes,n)
 
         # return updated weights
         return self.w_out, self.w_hid
@@ -195,8 +194,11 @@ class NeuralNetwork:
 
             # append the rmse of each epoch to rmse_list
             self.total_loss_list.append(np.mean(loss_list))
-            # print the epoch and rmse
-            print(f'Epoch: {epoch+1}, Loss: {self.total_loss_list[-1]:.4f}')
+            if (epoch+1) % 100 == 0:
+                # print the epoch and rmse
+                print(f'Epoch: {epoch+1}, Loss: {self.total_loss_list[-1]:.4f}')
+            else:
+                pass
     
     # defined train_step function (run over each training data and update weights is one epoch)
     def train_step(self,i):
@@ -216,11 +218,11 @@ class NeuralNetwork:
         elif self.loss_function == 'cross_entropy':
             loss = self.cross_entropy(true_vector, pred_vector)
             error_vector = pred_vector - true_vector
-            print(f'這是每筆的true_vector {true_vector}')
-            print(f'這是每筆的pred_vector: {pred_vector}')
-            print(f'這是每筆的loss: {loss}')
-            print(f'這是每筆的error_vector: {error_vector}')
-            print('----------------------------------')
+            # print(f'這是每筆的true_vector {true_vector}')
+            # print(f'這是每筆的pred_vector: {pred_vector}')
+            # print(f'這是每筆的loss: {loss}')
+            # print(f'這是每筆的error_vector: {error_vector}')
+            # print('----------------------------------')
 
         else:
             raise ValueError(f'Invalid loss function: {self.loss_function}, please input correct loss function')
@@ -257,9 +259,9 @@ if __name__ == "__main__":
     hyperparameters = {
     'n': 12,                 # n: number of hidden neurons
     'split_ratio': 0.5,      # split_ratio: train/test split ratio
-    'epochs': 5,          # epochs: number of training epochs
-    'learning_rate': 0.01,   # learning_rate: learning rate
-    'loss_function':'cross_entropy',
+    'epochs': 5000,          # epochs: number of training epochs
+    'learning_rate': 0.005,   # learning_rate: learning rate
+    'loss_function':'cross_entropy', # loss_function: mse or cross_entropy
     'mode': 'one_hot_encoding' # mode: one_hot_encoding or normal(default)    
     }
     nn = NeuralNetwork(**hyperparameters)
