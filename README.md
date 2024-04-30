@@ -1,20 +1,15 @@
-**機器學習與主動影像處理**
+**機器學習練習(不使用模型框架)**
+
+*<開發中>* <br>
+還再調整架構，預計之後嘗試提供GUI或網站去操作，是用戶能自行匯入分類資料集、選擇損失函數(RMSE/Cross-Entroy)、調整超參數等等
 
 *<說明來源>* <br>
-
-這個儲存庫包含了我為課程的期中作業所完成的專案。<br>
-作業的要求是使用 "iris" 數據集來完成一個分類任務，並且只能使用 numpy、pandas 和 matplotlib 這三個套件。 <br>
-這意味著我需要自己定義訓練過程中的前向傳播和反向傳播，以及大部分的code，不可使用其餘ML套件。 <br>
-由於我之前在類似的任務中使用過 keras 和 pytorch，對於整個架構有經驗，故這次自學使用OOP寫法來完成這個簡單任務。<br>
-我將超參數、繪圖和激活函數獨立出來，可以方便地進行未來的進行微調與更新。<br>
-目前還是學生，這是我第一份投稿，有任何建議都請聯絡我!
+完成一個分類任務，並且只能使用 numpy、pandas 和 matplotlib 這三個套件。 <br>
+練習定義訓練過程中的前向傳播和反向傳播。 <br>
+自學練習使用OOP寫法來完成簡單分類任務。<br>
+將超參數、和激活函數獨立出來，可以方便地進行未來的進行微調與更新。<br>
 
 *<使用>* <br>
-
-下載所有檔案，包含`midLabML.ipynb`以及`dataset file`，並裝在同一個資料夾下。<br>
-你可以選擇直接執行`midLabML.ipynb`,我已經分區並註解，相信能幫你理解其用作。
-又或是你可以選擇匯入model到你本地端檔案
-
 ```python
 import nbimporter #let file.ipynb can import to your file.py
 from midLabML import NeuralNetwork
