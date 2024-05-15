@@ -1,29 +1,43 @@
-import pytest
 import numpy as np
-from normalize import Normalization
+import pytest
+from normalize import MinMaxScaler
 
-def test_normalization():
-    # 建立 Normalization 物件
-    norm = Normalization()
+def test_min_max_scaler_init():
+    scaler = MinMaxScaler()
+    assert scaler.min is None
+    assert scaler.max is None
 
-    # 建立一個用於測試的數據集
+def test_min_max_scaler_fit():
+    scaler = MinMaxScaler()
     X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    scaler.fit(X)
+    assert np.array_equal(scaler.min, np.array([1, 2, 3]))
+    assert np.array_equal(scaler.max, np.array([7, 8, 9]))
 
-    # 應用 fit_transform 方法
-    X_norm = norm.fit_transform(X)
+def test_min_max_scaler_transform():
+    scaler = MinMaxScaler()
+    X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    scaler.fit(X)
+    X_transformed = scaler.transform(X)
+    X_expected = np.array([[0, 0, 0], [0.5, 0.5, 0.5], [1, 1, 1]])
+    assert np.allclose(X_transformed, X_expected)
 
-    # 檢查結果是否正確
-    assert np.allclose(X_norm, (X - np.min(X, axis=0)) / (np.max(X, axis=0) - np.min(X, axis=0)))
+def test_min_max_scaler_fit_transform():
+    scaler = MinMaxScaler()
+    X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    X_transformed = scaler.fit_transform(X)
+    X_expected = np.array([[0, 0, 0], [0.5, 0.5, 0.5], [1, 1, 1]])
+    assert np.allclose(X_transformed, X_expected)
 
-    # 檢查 min 和 range 屬性是否正確設置
-    assert np.allclose(norm.min, np.min(X, axis=0))
-    assert np.allclose(norm.range, np.max(X, axis=0) - np.min(X, axis=0))
+def test_min_max_scaler_on_single_feature():
+    scaler = MinMaxScaler()
+    X = np.array([[1], [2], [3]])
+    X_transformed = scaler.fit_transform(X)
+    X_expected = np.array([[0], [0.5], [1]])
+    assert np.allclose(X_transformed, X_expected)
 
-    # 建立一個新的數據集
-    X_new = np.array([[10, 11, 12], [13, 14, 15]])
-
-    # 應用 transform 方法
-    X_new_norm = norm.transform(X_new)
-
-    # 檢查結果是否正確
-    assert np.allclose(X_new_norm, (X_new - norm.min) / norm.range)
+def test_min_max_scaler_on_constant_feature():
+    scaler = MinMaxScaler()
+    X = np.array([[1], [1], [1]])
+    X_transformed = scaler.fit_transform(X)
+    assert np.isnan(X_transformed).all(), "All values should be NaN when dividing by zero in MinMaxScaler"

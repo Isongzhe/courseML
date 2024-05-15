@@ -3,127 +3,179 @@ import numpy as np
 import matplotlib.pyplot as plt
 from normalize import MinMaxScaler
 from pca import PCA
-from Layer import Layer
+import pickle
+
 
 def check_numpy_array(name, array):
     print(f"Shape of {name}: {array.shape}")
 
-class ProcessedDataset:
-    def __init__(self, params):
-        self.pca = PCA(params['n_components'])
-        self.normalization = MinMaxScaler()
 
-        self.train_x = pd.read_csv(params['input_train_path'], header=None).values
-        self.test_x = pd.read_csv(params['output_train_path'], header=None).values
-        self.train_y = pd.read_csv(params['input_test_path'], header=None).values
-        self.test_y = pd.read_csv(params['output_test_path'], header=None).values
+class ActivationFunctions:
+    @staticmethod
+    def purelin(x):
+        return x
 
-    def one_hot_encoding(self):
-        # 先將數據轉換為一維數組
-        self.train_y = np.squeeze(self.train_y)
-        self.test_y = np.squeeze(self.test_y)
-        # 獲取所有不同的類別
-        classes = np.unique(np.concatenate((self.train_y, self.test_y)))
-        # 將類別轉換為 one-hot 編碼
-        self.train_y = (self.train_y[:, None] == classes).astype(int)
-        self.test_y = (self.test_y[:, None] == classes).astype(int)
+    @staticmethod
+    def dpurelin(x):
+        return np.ones_like(x)
 
-    # 應用PCA，並返回處理後的數據集(只有訓練集需要fit，測試集不需要fit)
-    def apply_pca(self):
-        self.pca.fit(self.train_x)
-        self.train_x = self.pca.transform(self.train_x)
-        self.test_x = self.pca.transform(self.test_x)
+    @staticmethod
+    def logsig(x):
+        x = np.clip(x, -100, 100)
+        return 1 / (1 + np.exp(-x))
 
-    # 應用標準化，並返回處理後的數據集(只有訓練集需要fit，測試集不需要fit)
-    def apply_normalization(self):
-        # 使用訓練數據來 fit normalizer
-        self.normalization.fit(self.train_x)
-        # 使用 normalizer 來轉換訓練數據
-        self.train_x = self.normalization.transform(self.train_x)
-        self.test_x = self.normalization.transform(self.test_x)
+    @staticmethod
+    def dlogsig(x):
+        fx = ActivationFunctions.logsig(x)
+        return fx * (1 - fx)
     
-    def get_processedDatasets(self):
-        # 應用PCA
-        self.apply_pca()
-        # 應用標準化(先PCA再標準化)
-        self.apply_normalization()
-        # 轉成onehot encoding
-        self.one_hot_encoding()
-
-        return np.real(self.train_x), self.train_y, np.real(self.test_x), self.test_y
-
-# class NeuralNetwork:
-#     def __init__(self, layers):
-#         self.layers = layers
-#         self.losses = []
-
-#     def train(self, trainx, trainy, epochs, learning_rate):
-#         for epoch in range(epochs):
-#             epoch_loss = 0
-#             for i in range(len(trainx)):
-#                 # 前向傳播
-#                 output = trainx[i]
-#                 for layer in self.layers:
-#                     output = layer.forward(output)
-
-#                 # 反向傳播
-#                 expected_output = trainy[i]
-#                 error = output - expected_output
-#                 for layer in reversed(self.layers):
-#                     error = layer.backward(error, learning_rate)
-
-#                 # 計算損失
-#                 epoch_loss += np.sum(error**2) / 2
-
-#             # 記錄每個 epoch 的平均損失
-#             self.losses.append(epoch_loss / len(trainx))
-
-#     def plot_loss(self):
-#         plt.plot(self.losses)
-#         plt.xlabel('Epoch')
-#         plt.ylabel('Loss')
-#         plt.show()
-
-#     def pred(self, testx, testy):
-#         correct = 0
-#         for i in range(len(testx)):
-#             output = testx[i]
-#             for layer in self.layers:
-#                 output = layer.forward(output)
-
-#             if np.argmax(output) == np.argmax(testy[i]):
-#                 correct += 1
-
-#         return correct / len(testx)
+    @staticmethod
+    def softmax(x):
+        exps = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return exps / np.sum(exps, axis=1, keepdims=True)
     
+class NeuralNetwork:
+    # Constructor initialize the hyperparameters & weights & rmse_list
+    def __init__(self, n, epochs, learning_rate):
+        # Initialize all activation Functions 
+        # from ActivationFunctions class to get activation functions
+        # Help me to pass function_variable to other functions
+        self.purelin = ActivationFunctions.purelin
+        self.dpurelin = ActivationFunctions.dpurelin
+        self.logsig = ActivationFunctions.logsig
+        self.dlogsig = ActivationFunctions.dlogsig
+        self.softmax = ActivationFunctions.softmax
 
-# # 主程序，创建和训练神经网络
-# if __name__ == "__main__":
-#     # load dataset and preprocess using ProcessedDataset, etc.
-#     params = {
-#     'n_components': 65,
-#     'input_train_path': r'D:\GitHub\courseML\PCA\ORL_dataset\train_images.csv',
-#     'output_train_path': r'D:\GitHub\courseML\PCA\ORL_dataset\test_images.csv',
-#     'input_test_path': r'D:\GitHub\courseML\PCA\ORL_dataset\train_labels.csv',
-#     'output_test_path': r'D:\GitHub\courseML\PCA\ORL_dataset\test_labels.csv'
-#     }
-#     processedDataset_model = ProcessedDataset(params)
-#     train_x, train_y, test_x, test_y = processedDataset_model.get_processedDatasets()
-#     input_size = train_x.shape[1]
-#     output_size = train_y.shape[1]
+        # get Hyperparameters
+        self.n = n
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+        
+        # Initialize loss_list
+        self.total_loss_list = []
 
-#     # 創建神經網路的層
-#     input_layer = Layer.InputLayer(input_size, 50)
-#     hidden_layer = Layer.LogsigLayer(50, 50)
-#     output_layer = Layer.SoftmaxOutputLayer(50, output_size)
-#     nn = NeuralNetwork([input_layer, hidden_layer, output_layer])
+        # train dataset
+        self.train_x = pd.read_csv(r'D:\GitHub\courseML\PCA\ORL_dataset\processedDataset\train_x.csv', header=None)
+        self.train_y = pd.read_csv(r'D:\GitHub\courseML\PCA\ORL_dataset\processedDataset\train_y.csv', header=None)
+        # test dataset
+        self.test_x = pd.read_csv(r'D:\GitHub\courseML\PCA\ORL_dataset\processedDataset\test_x.csv', header=None)
+        self.test_y = pd.read_csv(r'D:\GitHub\courseML\PCA\ORL_dataset\processedDataset\test_y.csv', header=None)
 
-#     # 訓練神經網路
-#     nn.train(train_x, train_y, epochs=1000, learning_rate=0.01)
+        # get input_size
+        input_size = len(self.train_x.columns)
+        # get input_size
+        output_size = len(self.train_y.columns)
 
-#     # 測試神經網路
-#     accuracy = nn.pred(test_x, test_y)
-#     print("Test accuracy:", accuracy)
+        # Initialize weights
+        self.w_out = np.random.rand(self.n, output_size)*2-1
+        self.w_hid = np.random.rand(input_size, self.n)*2-1
 
-#     # Plot the loss over epochs
-#     nn.plot_loss()
+    def cross_entropy(self, true_vector, pred_vector):
+        return -np.mean(np.sum(true_vector * np.log(pred_vector), axis=1))
+
+    def forward_propagation(self, input_vector):
+        if isinstance(input_vector, pd.DataFrame):
+            input_vector = input_vector.values  # Convert to numpy array if input is a DataFrame
+        sum_hid = input_vector @ self.w_hid
+        a_hid = self.logsig(sum_hid)
+        sum_out = a_hid @ self.w_out
+        a_out = self.softmax(sum_out)
+        return a_hid, a_out
+
+    def Back_propagation(self, error_vector, a_out, a_hid, input_vector, learning_rate):
+        if isinstance(input_vector, pd.DataFrame):
+            input_vector = input_vector.values  # Convert to numpy array if input is a DataFrame
+        Delta_out = (error_vector)
+        Delta_hid = Delta_out @ self.w_out.T
+        self.w_out += learning_rate * a_hid.T @ Delta_out
+        self.w_hid += learning_rate * input_vector.T @ (Delta_hid * self.dlogsig(a_hid))
+        return self.w_out, self.w_hid
+    
+    def train(self):
+        for epoch in range(self.epochs):
+            loss_list = [self.train_step(i) for i in range(len(self.train_x))]
+            self.total_loss_list.append(np.mean(loss_list))
+
+            if (epoch + 1) % 100 == 0:
+                print(f'Epoch: {epoch+1}, Loss: {self.total_loss_list[-1]:.4f}')
+
+    def train_step(self, i):
+        input_vector = np.array(self.train_x.iloc[i]).reshape(1, -1)
+        a_hid, a_out = self.forward_propagation(input_vector)
+        true_vector = np.array(self.train_y.iloc[i]).reshape(1, -1)
+        pred_vector = a_out
+
+        loss = self.cross_entropy(true_vector, pred_vector)
+        error_vector = (true_vector - pred_vector)
+
+        # update weights
+        self.w_out, self.w_hid = self.Back_propagation(error_vector, a_out, a_hid, input_vector, self.learning_rate)
+        return loss
+    
+    # defined predict function and return predict_df and true_df
+    def predict(self):
+        _, predict_value = self.forward_propagation(self.train_x.values)  # Ensure X is a NumPy array here
+        groundTrue_array = self.test_y.values
+        predict_array = predict_value
+        return groundTrue_array, predict_array
+    
+    def save_weights(self):
+        np.save('./weights/w_out.npy', self.w_out)
+        np.save('./weights/w_hid.npy', self.w_hid)
+
+    def save_df(self):
+        self.predict_df.to_csv('./result/predict.csv', index=False, header=None)
+        self.true_df.to_csv('./result/true.csv', index=False, header=None)
+
+    # use Plotting class to plot loss and predict
+    def loss_plot(self):
+        plt.plot(self.total_loss_list)
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Loss over epochs')
+        plt.show()
+
+
+def calculate_accuracy(y_true, y_pred):
+    # 找出每個標籤和預測值中最大值的索引
+    y_true_indices = np.argmax(y_true, axis=1)
+    y_pred_indices = np.argmax(y_pred, axis=1)
+
+    # 比較這些索引是否相等，並計算準確度
+    accuracy = np.mean(y_true_indices == y_pred_indices)
+
+    return accuracy
+
+def train():
+    hyperparameters = {
+    'n': 80,                 # n: number of hidden neurons
+    'epochs': 300,          # epochs: number of training epochs
+    'learning_rate': 0.1,   # learning_rate: learning rate   
+    }
+    nn = NeuralNetwork(**hyperparameters)
+    nn.train()
+    save_model(nn)
+
+def save_model(nn):   
+    # 保存模型參數
+    with open('model_parameters.pkl', 'wb') as f:
+        pickle.dump(nn, f)
+
+def load_model():
+    # 載入模型參數
+    with open('model_parameters.pkl', 'rb') as f:
+        nn = pickle.load(f)
+    return nn
+
+def predict():
+    nn = load_model()
+    true, predict = nn.predict()
+    accuracy = calculate_accuracy(true, predict)
+    print(f'Accuracy: {accuracy:.4f}')
+    nn.loss_plot()
+
+
+if __name__ == "__main__":
+    # train()
+    predict()
+    
