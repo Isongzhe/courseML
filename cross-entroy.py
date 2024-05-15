@@ -220,11 +220,6 @@ class NeuralNetwork:
         elif self.loss_function == 'cross_entropy':
             loss = self.cross_entropy(true_vector, pred_vector)
             error_vector = -(pred_vector - true_vector)
-            # print(f'這是每筆的true_vector {true_vector}')
-            # print(f'這是每筆的pred_vector: {pred_vector}')
-            # print(f'這是每筆的loss: {loss}')
-            # print(f'這是每筆的error_vector: {error_vector}')
-            # print('----------------------------------')
 
         else:
             raise ValueError(f'Invalid loss function: {self.loss_function}, please input correct loss function')
