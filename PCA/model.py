@@ -156,12 +156,12 @@ def train():
 
 def save_model(nn):   
     # 保存模型參數
-    with open('model_parameters.pkl', 'wb') as f:
+    with open(r'D:\GitHub\courseML\PCA\result\model_parameters.pkl', 'wb') as f:
         pickle.dump(nn, f)
 
 def load_model():
     # 載入模型參數
-    with open('model_parameters.pkl', 'rb') as f:
+    with open(r'D:\GitHub\courseML\PCA\result\model_parameters.pkl', 'rb') as f:
         nn = pickle.load(f)
     return nn
 
