@@ -5,10 +5,8 @@ from normalize import MinMaxScaler
 from pca import PCA
 import pickle
 
-
 def check_numpy_array(name, array):
     print(f"Shape of {name}: {array.shape}")
-
 
 class ActivationFunctions:
     @staticmethod
