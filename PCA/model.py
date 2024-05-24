@@ -59,6 +59,12 @@ class NeuralNetwork:
         self.test_x = pd.read_csv(r'D:\GitHub\courseML\PCA\ORL_dataset\processedDataset\test_x.csv', header=None)
         self.test_y = pd.read_csv(r'D:\GitHub\courseML\PCA\ORL_dataset\processedDataset\test_y.csv', header=None)
 
+        # check numpy array
+        check_numpy_array('train_x', self.train_x)
+        check_numpy_array('train_y', self.train_y)
+        check_numpy_array('test_x', self.test_x)
+        check_numpy_array('test_y', self.test_y)
+
         # get input_size
         input_size = len(self.train_x.columns)
         # get input_size
@@ -67,6 +73,10 @@ class NeuralNetwork:
         # Initialize weights
         self.w_out = np.random.rand(self.n, output_size)*2-1
         self.w_hid = np.random.rand(input_size, self.n)*2-1
+
+        # check_numpy_array(weights)
+        check_numpy_array('w_out', self.w_out)
+        check_numpy_array('w_hid', self.w_hid)
 
     def cross_entropy(self, true_vector, pred_vector):
         return -np.mean(np.sum(true_vector * np.log(pred_vector), axis=1))
@@ -121,10 +131,6 @@ class NeuralNetwork:
         np.save('./weights/w_out.npy', self.w_out)
         np.save('./weights/w_hid.npy', self.w_hid)
 
-    def save_df(self):
-        self.predict_df.to_csv('./result/predict.csv', index=False, header=None)
-        self.true_df.to_csv('./result/true.csv', index=False, header=None)
-
     # use Plotting class to plot loss and predict
     def loss_plot(self):
         plt.plot(self.total_loss_list)
@@ -152,7 +158,7 @@ def train():
     }
     nn = NeuralNetwork(**hyperparameters)
     nn.train()
-    save_model(nn)
+    # save_model(nn)
 
 def save_model(nn):   
     # 保存模型參數
@@ -168,6 +174,14 @@ def load_model():
 def predict():
     nn = load_model()
     true, predict = nn.predict()
+    #檢查
+    check_numpy_array('true', true)
+    check_numpy_array('predict', predict)
+    # 保存 true 陣列
+    np.savetxt(r"D:\GitHub\courseML\PCA\result\true.csv", true, delimiter=",")
+    # 保存 predict 陣列
+    np.savetxt(r"D:\GitHub\courseML\PCA\result\predict.csv", predict, delimiter=",")
+    
     accuracy = calculate_accuracy(true, predict)
     print(f'Accuracy: {accuracy:.4f}')
     nn.loss_plot()
